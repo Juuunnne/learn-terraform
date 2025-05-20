@@ -1,0 +1,39 @@
+- name: Déploiement de l’API
+  hosts: web
+  become: yes
+
+  tasks:
+    - name: Installer Git & cURL
+      apt:
+        name: ["git", "curl"]
+        update_cache: yes
+        state: present
+
+    - name: Installer Node.js (LTS)
+      shell: |
+        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+        apt-get install -y nodejs
+      args:
+        warn: false
+
+    - name: Cloner ou mettre à jour l’API
+      git:
+        repo: https://github.com/ton-compte/ton-api.git
+        dest: /home/azureuser/api
+        version: main
+        force: yes
+
+    - name: Installer les dépendances npm
+      npm:
+        path: /home/azureuser/api
+
+    - name: Installer PM2
+      npm:
+        name: pm2
+        global: yes
+
+    - name: Démarrer l’API avec PM2
+      shell: |
+        pm2 delete all || true
+        pm2 start /home/azureuser/api/index.js --name api
+        pm2 save
